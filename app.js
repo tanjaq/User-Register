@@ -17,8 +17,10 @@ function createApp(validateUsername, validatePassword) {
     
       if (validUsername && validPassword) {
         res.send({userId: '1', message: "Valid User"})
+        
       } else {
         res.status(400).send({error: "Invalid User"})
+        
       }
     })
     return app
