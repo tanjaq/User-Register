@@ -2,8 +2,8 @@ const createApp = require('./app');
 const request = require('supertest');
 const validateUsername = require('./validation/validateUsername');
 const validatePassword = require('./validation/validatePassword');
-
 const app = createApp(validateUsername, validatePassword);
+
 
 describe('correct username and password', () => {
     // Проверка, что при правильных данных возвращается статус 200
