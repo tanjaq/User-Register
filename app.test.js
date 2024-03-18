@@ -1,9 +1,13 @@
 const createApp = require('./app')
 const request = require('supertest')
+
+const mockedValidatePassword = jest.fn(password => password.length >= 8);
+const mockedValidateUsername = jest.fn(username => username.length >= 6 && username.length <= 30)
+
 const validateUsername = require('./validation/validateUsername')
 const validatePassword = require('./validation/validatePassword')
 
-const app = createApp(validateUsername, validatePassword)
+const app = createApp(mockedValidateUsername, mockedValidatePassword)
 
 describe('given correct username and password', () => {
     test('return status 200', async () => {
