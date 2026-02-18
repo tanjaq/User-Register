@@ -5,45 +5,50 @@ const validatePassword = require('./validation/validatePassword')
 const validateEmail = require('./validation/validateEmail')
 
 const app = createApp(validateUsername, validatePassword, validateEmail)
+const validUser = {
+    username: 'ValidUser123',
+    password: 'Password123',
+    email: 'student@example.com'
+}
 
 describe('given correct username and password', () => {
-    test('return status 200', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
-        })
+    test('returns success response with userId', async () => {
+        const response = await request(app).post('/users').send(validUser)
         expect(response.statusCode).toBe(200)
+        expect(response.headers['content-type']).toMatch(/application\/json/)
+        expect(response.body).toEqual({ userId: '1', message: 'Valid User' })
     })
-
-    test('returns userId', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
-        })
-        expect(response.body.userId).toBeDefined();
-    })
-
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
 })
 
 describe('given incorrect or missing username and password', () => {
-    test('return status 400', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'user',
-            password: 'password',
-            email: 'not-an-email'
-        })
-        expect(response.statusCode).toBe(400)
-    })
+    const invalidCases = [
+        {
+            name: 'username is too short',
+            payload: { ...validUser, username: 'user' }
+        },
+        {
+            name: 'password is missing uppercase letter',
+            payload: { ...validUser, password: 'password123' }
+        },
+        {
+            name: 'username contains invalid characters',
+            payload: { ...validUser, username: 'Invalid@User' }
+        },
+        {
+            name: 'email format is invalid',
+            payload: { ...validUser, email: 'not-an-email' }
+        },
+        {
+            name: 'password is missing',
+            payload: { ...validUser, password: '' }
+        }
+    ]
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
+    test.each(invalidCases)('returns error when $name', async ({ payload }) => {
+        const response = await request(app).post('/users').send(payload)
+        expect(response.statusCode).toBe(400)
+        expect(response.headers['content-type']).toMatch(/application\/json/)
+        expect(response.body).toEqual({ error: 'Invalid User' })
+        expect(response.body.userId).toBeUndefined()
+    })
 })
