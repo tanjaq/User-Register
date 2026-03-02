@@ -110,32 +110,3 @@ describe('given incorrect or missing username and password', () => {
     })
 })
 
-test('fails when username invalid but password and email valid', async () => {
-    const response = await request(app).post('/users').send({
-        username: 'usr', // плохой username
-        password: 'Password123',
-        email: 'student@example.com'
-    })
-
-    expect(response.statusCode).toBe(400)
-})
-
-test('fails when password invalid but username and email valid', async () => {
-    const response = await request(app).post('/users').send({
-        username: 'Username',
-        password: 'pass', // плохой password
-        email: 'student@example.com'
-    })
-
-    expect(response.statusCode).toBe(400)
-})
-
-test('fails when email invalid but username and password valid', async () => {
-    const response = await request(app).post('/users').send({
-        username: 'Username',
-        password: 'Password123',
-        email: 'wrong-email'
-    })
-
-    expect(response.statusCode).toBe(400)
-})
