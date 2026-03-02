@@ -47,6 +47,38 @@ Jest documentation:
    * Lisa coverage info
    * Lisa testide jooksuaja info
 
+### Ülesanne 1 tulemused (terminalist)
+
+#### Coverage (`npx jest app.test.js --coverage`)
+
+```bash
+PASS  ./app.test.js (20.237 s)
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        20.361 s, estimated 21 s
+```
+
+Coverage kokkuvõte:
+
+```text
+All files                 | 97.05 | 92.3 | 100 | 100
+app.js                    | 100   | 92.3 | 100 | 100 | Uncovered: 13
+validateEmail.js          | 85.71 | 75   | 100 | 100 | Uncovered: 9
+validatePassword.js       | 100   | 100  | 100 | 100
+validateUsername.js       | 100   | 100  | 100 | 100
+```
+
+#### Testide jooksuaeg (`npx jest app.test.js --verbose`)
+
+```bash
+PASS  ./app.test.js (20.251 s)
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        20.307 s, estimated 21 s
+```
+
 ## Ülesanne 2: Mocked API testid
 * Mocki emaili validatsioon kasutades `jest.mock()`
 * Kirjuta samad testid `app.mock.test.js` faili

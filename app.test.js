@@ -40,7 +40,7 @@ describe('given correct username and password', () => {
             password: 'Password123',
             email: 'student@example.com'
         })
-        expect(response.body.message).toBe('User created successfully')
+        expect(response.body.message).toBe('Valid User')
     })
     // test response user id value
         test('return response user id value', async () => { //fix test
@@ -49,7 +49,7 @@ describe('given correct username and password', () => {
             password: 'Password123',
             email: 'student@example.com'
         })
-        expect(response.body.userId).toBeGreaterThan(0)
+        expect(Number(response.body.userId)).toBeGreaterThan(0)
     // ...
     })
 })
@@ -71,7 +71,7 @@ describe('given incorrect or missing username and password', () => {
             password: 'password',
             email: 'not-an-email'
         })
-        expect(response.body.message).toBe('Invalid input data')
+        expect(response.body.error).toBe('Invalid User')
     })
 
     // test that response does NOT have userId
@@ -90,7 +90,7 @@ describe('given incorrect or missing username and password', () => {
             password: 'Password123',
             email: 'student@example.com'
         })
-        expect(response.body.message).toBe('Invalid username')
+        expect(response.body.error).toBe('Invalid User')
     })
     // test missing username or password
     test('return error message for missing username', async () => {//fix test
@@ -98,7 +98,8 @@ describe('given incorrect or missing username and password', () => {
             password: 'Password123',
             email: 'student@example.com'
         })
-        expect(response.body.message).toBe('Missing username')
+        expect(response.statusCode).toBe(400)
+        expect(response.body.error).toBe('Invalid User')
     })
     // ...
 })
