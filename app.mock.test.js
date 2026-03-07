@@ -1,3 +1,5 @@
+jest.mock('./validation/validateEmail', () => jest.fn())
+
 const createApp = require('./app')
 const request = require('supertest')
 const validateUsername = require('./validation/validateUsername')
@@ -6,7 +8,7 @@ const validateEmail = require('./validation/validateEmail')
 
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
-jest.setTimeout(30000)
+jest.setTimeout(10000)
 
 const validUser = {
     username: 'ValidUser',
@@ -19,11 +21,17 @@ const postUser = (overrides = {}) => request(app).post('/users').send({
     ...overrides
 })
 
-describe('POST /users', () => {
+beforeEach(() => {
+    validateEmail.mockClear()
+    validateEmail.mockReturnValue(true)
+})
+
+describe('POST /users with mocked email validation', () => {
     describe('given valid username, password and email', () => {
         test('returns 200 with Valid User payload', async () => {
             const response = await postUser()
 
+            expect(validateEmail).toHaveBeenCalledWith(validUser.email)
             expect(response.statusCode).toBe(200)
             expect(response.headers['content-type']).toMatch(/json/)
             expect(response.body).toEqual({ userId: '1', message: 'Valid User' })
@@ -86,14 +94,18 @@ describe('POST /users', () => {
 
     describe('email validation', () => {
         test('rejects invalid email format', async () => {
+            validateEmail.mockReturnValue(false)
             const response = await postUser({ email: 'studentexample.com' })
 
+            expect(validateEmail).toHaveBeenCalledWith('studentexample.com')
             expect(response.statusCode).toBe(400)
         })
 
         test('rejects email without domain extension', async () => {
+            validateEmail.mockReturnValue(false)
             const response = await postUser({ email: 'student@example' })
 
+            expect(validateEmail).toHaveBeenCalledWith('student@example')
             expect(response.statusCode).toBe(400)
         })
     })
