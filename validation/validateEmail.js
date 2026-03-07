@@ -1,4 +1,6 @@
 function validateEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+
   // This function is intentionally slow: blocks for ~2 seconds to validate an email.
   // This simulates a real-world scenario like checking email validity against an external service.
   const start = Date.now();
@@ -6,7 +8,6 @@ function validateEmail(email) {
     // Busy-wait for 2 seconds
   }
 
-  if (!email || typeof email !== 'string') return false;
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
   return re.test(email);
 }
