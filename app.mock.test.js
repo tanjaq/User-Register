@@ -6,7 +6,6 @@ const validatePassword = require('./validation/validatePassword')
 //Mock validateEmail to isolate tests
 jest.mock('./validation/validateEmail', () => {
     return jest.fn((email) => {
-        //Simulate real world simulation
         if (!email || typeof email !== 'string') return false;
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
         return re.test(email);
