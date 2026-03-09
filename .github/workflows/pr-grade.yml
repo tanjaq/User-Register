@@ -168,7 +168,7 @@ jobs:
             const checksUrl = '${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/checks';
 
             const body = `${marker}
-            ### Readme Test Grade
+            ### API & Mocked Tests and Coverage
             **Purpose:** Validate README requirements for regular tests, mocked email tests, coverage, and runtime comparison.
             **Status:** ${allOk ? '✅ PASS' : '❌ FAIL'}
             **Regular tests (app.test.js):** ${regularOk ? '✅ PASS' : '❌ FAIL'} (${{ steps.regular_tests.outputs.duration_ms }} ms)
