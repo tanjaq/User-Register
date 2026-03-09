@@ -1,0 +1,214 @@
+name: PR Checks
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, labeled, edited]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tests-and-coverage:
+    name: Readme Test Grade
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch (submitted code)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Setup Node (use consistent runtime)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies (prepare test environment)
+        run: npm ci --legacy-peer-deps
+
+      - name: Run regular tests with coverage (app.test.js)
+        id: regular_tests
+        continue-on-error: true
+        run: |
+          mkdir -p coverage/regular
+          start_ms=$(date +%s%3N)
+          set +e
+          npx jest --runInBand app.test.js \
+            --coverage \
+            --coverageDirectory=coverage/regular \
+            --coverageReporters=json-summary \
+            --coverageReporters=text-summary \
+            --collectCoverageFrom=app.js \
+            --collectCoverageFrom=validation/*.js
+          status=$?
+          end_ms=$(date +%s%3N)
+          set -e
+          echo "duration_ms=$((end_ms - start_ms))" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Run mocked email tests with coverage (app.mock.test.js)
+        id: mocked_tests
+        continue-on-error: true
+        run: |
+          mkdir -p coverage/mocked
+          start_ms=$(date +%s%3N)
+          set +e
+          npx jest --runInBand app.mock.test.js \
+            --coverage \
+            --coverageDirectory=coverage/mocked \
+            --coverageReporters=json-summary \
+            --coverageReporters=text-summary \
+            --collectCoverageFrom=app.js \
+            --collectCoverageFrom=validation/*.js
+          status=$?
+          end_ms=$(date +%s%3N)
+          set -e
+          echo "duration_ms=$((end_ms - start_ms))" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Enforce 100% coverage for regular and mocked runs
+        id: coverage_gate
+        continue-on-error: true
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const keys = ['lines', 'statements', 'functions', 'branches'];
+          const suites = [
+            { name: 'regular', path: 'coverage/regular/coverage-summary.json' },
+            { name: 'mocked', path: 'coverage/mocked/coverage-summary.json' }
+          ];
+
+          let ok = true;
+          for (const suite of suites) {
+            if (!fs.existsSync(suite.path)) {
+              console.error(`${suite.name}: coverage-summary.json not found at ${suite.path}`);
+              ok = false;
+              continue;
+            }
+            const total = JSON.parse(fs.readFileSync(suite.path, 'utf8')).total;
+            const bad = keys.filter((k) => total[k].pct < 100);
+            if (bad.length) {
+              console.error(
+                `${suite.name}: coverage below 100% for`,
+                bad.map((k) => `${k}=${total[k].pct}%`).join(', ')
+              );
+              ok = false;
+              continue;
+            }
+            console.log(`${suite.name}: coverage OK (${keys.map((k) => `${k}=${total[k].pct}%`).join(', ')})`);
+          }
+
+          if (!ok) {
+            process.exit(1);
+          }
+          NODE
+
+      - name: Enforce runtime rule (regular must be slower than mocked)
+        id: timing_gate
+        continue-on-error: true
+        run: |
+          regular_ms="${{ steps.regular_tests.outputs.duration_ms }}"
+          mocked_ms="${{ steps.mocked_tests.outputs.duration_ms }}"
+
+          if [ -z "$regular_ms" ] || [ -z "$mocked_ms" ]; then
+            echo "Missing runtime outputs."
+            exit 1
+          fi
+          if [ "${{ steps.regular_tests.outcome }}" != "success" ] || [ "${{ steps.mocked_tests.outcome }}" != "success" ]; then
+            echo "One of the test runs failed, cannot validate runtime comparison."
+            exit 1
+          fi
+          if [ "$regular_ms" -le "$mocked_ms" ]; then
+            echo "Runtime check failed: regular (${regular_ms}ms) must be longer than mocked (${mocked_ms}ms)."
+            exit 1
+          fi
+          echo "Runtime check passed: regular=${regular_ms}ms mocked=${mocked_ms}ms."
+
+      - name: Read coverage values for both runs
+        id: coverage_values
+        if: always()
+        run: |
+          node - <<'NODE' >> "$GITHUB_OUTPUT"
+          const fs = require('fs');
+
+          function printSuite(prefix, path) {
+            if (!fs.existsSync(path)) {
+              console.log(`${prefix}_lines=n/a`);
+              console.log(`${prefix}_statements=n/a`);
+              console.log(`${prefix}_functions=n/a`);
+              console.log(`${prefix}_branches=n/a`);
+              return;
+            }
+            const s = JSON.parse(fs.readFileSync(path, 'utf8')).total;
+            console.log(`${prefix}_lines=${s.lines.pct}`);
+            console.log(`${prefix}_statements=${s.statements.pct}`);
+            console.log(`${prefix}_functions=${s.functions.pct}`);
+            console.log(`${prefix}_branches=${s.branches.pct}`);
+          }
+
+          printSuite('regular', 'coverage/regular/coverage-summary.json');
+          printSuite('mocked', 'coverage/mocked/coverage-summary.json');
+          NODE
+
+      - name: Comment test/coverage result on PR (post pass/fail summary)
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- test-coverage-check -->';
+            const regularOk = '${{ steps.regular_tests.outcome }}' === 'success';
+            const mockedOk = '${{ steps.mocked_tests.outcome }}' === 'success';
+            const coverageOk = '${{ steps.coverage_gate.outcome }}' === 'success';
+            const timingOk = '${{ steps.timing_gate.outcome }}' === 'success';
+            const allOk = regularOk && mockedOk && coverageOk && timingOk;
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const checksUrl = '${{ github.server_url }}/${{ github.repository }}/pull/${{ github.event.pull_request.number }}/checks';
+
+            const body = `${marker}
+            ### Readme Test Grade
+            **Purpose:** Validate README requirements for regular tests, mocked email tests, coverage, and runtime comparison.
+            **Status:** ${allOk ? '✅ PASS' : '❌ FAIL'}
+            **Regular tests (`app.test.js`):** ${regularOk ? '✅ PASS' : '❌ FAIL'} (${{ steps.regular_tests.outputs.duration_ms }} ms)
+            **Mocked tests (`app.mock.test.js`):** ${mockedOk ? '✅ PASS' : '❌ FAIL'} (${{ steps.mocked_tests.outputs.duration_ms }} ms)
+            **Coverage gate (both runs at 100%):** ${coverageOk ? '✅ PASS' : '❌ FAIL'}
+            **Runtime gate (`regular > mocked`):** ${timingOk ? '✅ PASS' : '❌ FAIL'}
+            **Regular coverage:** lines=${{ steps.coverage_values.outputs.regular_lines }}%, statements=${{ steps.coverage_values.outputs.regular_statements }}%, functions=${{ steps.coverage_values.outputs.regular_functions }}%, branches=${{ steps.coverage_values.outputs.regular_branches }}%
+            **Mocked coverage:** lines=${{ steps.coverage_values.outputs.mocked_lines }}%, statements=${{ steps.coverage_values.outputs.mocked_statements }}%, functions=${{ steps.coverage_values.outputs.mocked_functions }}%, branches=${{ steps.coverage_values.outputs.mocked_branches }}%
+            **Run details:** ${runUrl}
+            **PR checks:** ${checksUrl}
+            ${allOk ? '' : '**Where to look:** Inspect the `Run regular tests`, `Run mocked email tests`, `Enforce 100% coverage`, and `Enforce runtime rule` logs in this run.'}
+            `;
+
+            const issue_number = context.payload.pull_request.number;
+            const { owner, repo } = context.repo;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100
+            });
+            const existing = comments.filter(c => (c.body || '').includes(marker)).pop();
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Set tests/coverage job status (reflect check outcome)
+        if: always()
+        run: |
+          if [ "${{ steps.regular_tests.outcome }}" != "success" ] \
+            || [ "${{ steps.mocked_tests.outcome }}" != "success" ] \
+            || [ "${{ steps.coverage_gate.outcome }}" != "success" ] \
+            || [ "${{ steps.timing_gate.outcome }}" != "success" ]; then
+            echo "README test grading checks failed."
+            exit 1
+          fi
