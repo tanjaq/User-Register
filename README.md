@@ -87,3 +87,39 @@ Time:        20.307 s, estimated 21 s
    * Lisa coverage info
    * Lisa testide jooksuaja info
    * Võrdle jooksumisaega (Ülesanne 1 vs Ülesanne 2)
+
+### Ülesanne 2 tulemused (terminalist)
+
+#### Coverage (`npm test -- app.mock.test.js`)
+
+```bash
+PASS  ./app.mock.test.js
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        0.314 s, estimated 1 s
+```
+
+Coverage kokkuvõte:
+
+```text
+All files                 | 100 | 95.45 | 100 | 100
+app.js                    | 100 | 92.3  | 100 | 100 | Uncovered: 13
+validatePassword.js       | 100 | 100   | 100 | 100
+validateUsername.js       | 100 | 100   | 100 | 100
+```
+
+#### Testide jooksuaeg (`/usr/bin/time -p npm test -- app.mock.test.js`)
+
+```bash
+real 1.12
+user 1.21
+sys 0.27
+```
+
+### Jooksuaja võrdlus (Ülesanne 1 vs Ülesanne 2)
+
+| Mõõdik | Ülesanne 1 (`app.test.js`) | Ülesanne 2 (`app.mock.test.js`) | Vahe |
+|---|---:|---:|---:|
+| Jest Time | 20.447 s | 0.314 s | ~98.5% kiirem |
+| Shell real | 21.51 s | 1.12 s | ~94.8% kiirem |
