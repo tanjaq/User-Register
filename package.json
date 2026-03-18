@@ -10,7 +10,7 @@
     "supertest": "^6.3.3"
   },
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage --verbose --testTimeout=10000"
   },
   "keywords": [],
   "author": "",

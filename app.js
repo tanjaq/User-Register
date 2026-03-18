@@ -12,6 +12,10 @@ function createApp(validateUsername, validatePassword, validateEmail) {
     app.post('/users', async(req, res) => {
       const { username, password, email } = req.body
 
+      if (!username || !password || !email) {
+        return res.status(400).send({error: "Invalid User"})
+      }
+
       const validUsername = validateUsername(username)
       const validPassword = validatePassword(password)
       const validEmail =  validateEmail(email)
