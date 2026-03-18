@@ -1,8 +1,8 @@
 function createApp(validateUsername, validatePassword, validateEmail) {
     const express = require('express')
     const cors = require('cors')
-    const app = express()
 
+    const app = express()
     app.use(express.json())
     app.use(cors())
     app.use(express.static(__dirname + '/public'))
@@ -10,14 +10,14 @@ function createApp(validateUsername, validatePassword, validateEmail) {
     app.post('/users', async (req, res) => {
         const { username, password, email } = req.body
 
-        const validUsername = validateUsername(username)
-        const validPassword = validatePassword(password)
-        const validEmail = validateEmail(email)
+        const validUsername = username ? validateUsername(username) : false
+        const validPassword = password ? validatePassword(password) : false
+        const validEmail = email ? validateEmail(email) : false
 
         if (validUsername && validPassword && validEmail) {
-            res.send({ userId: '1', message: 'Valid User' })
+            res.send({ userId: '1', message: "Valid User" })
         } else {
-            res.status(400).send({ error: 'Invalid User' })
+            res.status(400).send({ error: "Invalid User" })
         }
     })
 
