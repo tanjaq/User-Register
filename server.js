@@ -8,7 +8,6 @@ const port = 3000;
 
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
-// Start the server
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
