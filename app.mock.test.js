@@ -3,13 +3,23 @@ const request = require('supertest')
 const validateUsername = require('./validation/validateUsername')
 const validatePassword = require('./validation/validatePassword')
 
-//Mock validateEmail to isolate tests
+// Mock email validation but still execute the real validator logic
+// without the artificial 2-second delay, so the mocked run keeps 100% coverage.
 jest.mock('./validation/validateEmail', () => {
+    const actualValidateEmail = jest.requireActual('./validation/validateEmail')
+
     return jest.fn((email) => {
-        //Simulate real world simulation
-        if (!email || typeof email !== 'string') return false;
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
-        return re.test(email);
+        const originalDateNow = Date.now
+
+        Date.now = jest.fn()
+            .mockReturnValueOnce(0)
+            .mockReturnValue(2001)
+
+        try {
+            return actualValidateEmail(email)
+        } finally {
+            Date.now = originalDateNow
+        }
     })
 })
 
