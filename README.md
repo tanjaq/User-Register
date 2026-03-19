@@ -55,11 +55,3 @@ Jest documentation:
    * Lisa coverage info
    * Lisa testide jooksuaja info
    * Võrdle jooksumisaega (Ülesanne 1 vs Ülesanne 2)
-
-
-
-   Ülesanne 1 jooksmisaeg:
-         11.745 s
-
-   Ülesanne 2 jooksmisaeg:
-         3.935 s

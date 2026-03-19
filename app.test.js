@@ -1,93 +1,93 @@
 const createApp = require('./app')
 const request = require('supertest')
-
-// Import the real validation functions
 const validateUsername = require('./validation/validateUsername')
 const validatePassword = require('./validation/validatePassword')
 const validateEmail = require('./validation/validateEmail')
 
-// Create a wrapper app using the real validators
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
-describe('POST /users - valid inputs', () => {
-  // Mock the validators to always return true for "valid inputs"
-  const mockValidateUsername = jest.fn(() => true)
-  const mockValidatePassword = jest.fn(() => true)
-  const mockValidateEmail = jest.fn(() => true)
+describe('POST /users', () => {
+    test('returns 200 and valid user payload for valid input', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'User.Name123',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
 
-  const validApp = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
-
-  const validUser = {
-    username: 'ValidUser',
-    password: 'StrongPass123!',
-    email: 'student@example.com'
-  }
-
-  test('should return status 200', async () => {
-    const response = await request(validApp).post('/users').send(validUser)
-    expect(response.statusCode).toBe(200)
-  })
-
-  test('should return JSON content type', async () => {
-    const response = await request(validApp).post('/users').send(validUser)
-    expect(response.headers['content-type']).toMatch(/json/)
-  })
-
-  test('should return a userId', async () => {
-    const response = await request(validApp).post('/users').send(validUser)
-    expect(response.body.userId).toBeDefined()
-  })
-
-  test('should return success message', async () => {
-    const response = await request(validApp).post('/users').send(validUser)
-    expect(response.body.message).toBe('Valid User')
-  })
-})
-
-describe('POST /users - invalid inputs', () => {
-  test('should return status 400', async () => {
-    const response = await request(app).post('/users').send({
-      username: 'usr',          // too short
-      password: '123',          // too weak
-      email: 'not-an-email'     // invalid
+        expect(response.statusCode).toBe(200)
+        expect(response.headers['content-type']).toMatch(/json/)
+        expect(response.body).toEqual({
+            userId: '1',
+            message: 'Valid User'
+        })
     })
-    expect(response.statusCode).toBe(400)
-  })
 
-  test('should return JSON content type', async () => {
-    const response = await request(app).post('/users').send({
-      username: 'usr',
-      password: '123',
-      email: 'not-an-email'
-    })
-    expect(response.headers['content-type']).toMatch(/json/)
-  })
+    test.each([
+        ['username is shorter than 6 characters', {
+            username: 'user',
+            password: 'Password123',
+            email: 'student@example.com'
+        }],
+        ['username contains special characters', {
+            username: 'user!23',
+            password: 'Password123',
+            email: 'student@example.com'
+        }],
+        ['password is shorter than 8 characters', {
+            username: 'Valid.User',
+            password: 'Pass123',
+            email: 'student@example.com'
+        }],
+        ['password is missing an uppercase letter', {
+            username: 'Valid.User',
+            password: 'password123',
+            email: 'student@example.com'
+        }],
+        ['password is missing a lowercase letter', {
+            username: 'Valid.User',
+            password: 'PASSWORD123',
+            email: 'student@example.com'
+        }],
+        ['password is missing a number', {
+            username: 'Valid.User',
+            password: 'Password',
+            email: 'student@example.com'
+        }],
+        ['password contains special characters', {
+            username: 'Valid.User',
+            password: 'Password123!',
+            email: 'student@example.com'
+        }],
+        ['email is missing @', {
+            username: 'Valid.User',
+            password: 'Password123',
+            email: 'studentexample.com'
+        }],
+        ['email is missing a valid domain extension', {
+            username: 'Valid.User',
+            password: 'Password123',
+            email: 'student@example'
+        }],
+        ['username is missing', {
+            password: 'Password123',
+            email: 'student@example.com'
+        }],
+        ['password is missing', {
+            username: 'Valid.User',
+            email: 'student@example.com'
+        }],
+        ['email is missing', {
+            username: 'Valid.User',
+            password: 'Password123'
+        }]
+    ])('returns 400 and error payload when %s', async (_scenario, payload) => {
+        const response = await request(app).post('/users').send(payload)
 
-  test('should return error message', async () => {
-    const response = await request(app).post('/users').send({
-      username: 'usr',
-      password: '123',
-      email: 'not-an-email'
+        expect(response.statusCode).toBe(400)
+        expect(response.headers['content-type']).toMatch(/json/)
+        expect(response.body).toEqual({
+            error: 'Invalid User'
+        })
+        expect(response.body.userId).toBeUndefined()
     })
-    expect(response.body.error).toBe('Invalid User')
-  })
-
-  test('should NOT return userId', async () => {
-    const response = await request(app).post('/users').send({
-      username: 'usr',
-      password: '123',
-      email: 'not-an-email'
-    })
-    expect(response.body.userId).toBeUndefined()
-  })
-
-  test('should fail when username or password is missing', async () => {
-    const response = await request(app).post('/users').send({
-      username: '',
-      password: '',
-      email: 'test@example.com'
-    })
-    expect(response.statusCode).toBe(400)
-    expect(response.body.error).toBe('Invalid User')
-  })
 })
