@@ -24,11 +24,6 @@ describe('given correct username and password', () => {
         })
         expect(response.body.userId).toBeDefined();
     })
-
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
 })
 
 describe('given incorrect or missing username and password', () => {
@@ -40,10 +35,4 @@ describe('given incorrect or missing username and password', () => {
         })
         expect(response.statusCode).toBe(400)
     })
-
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
 })
