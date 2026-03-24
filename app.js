@@ -11,10 +11,9 @@ function createApp(validateUsername, validatePassword, validateEmail) {
 
     app.post('/users', async(req, res) => {
       const { username, password, email } = req.body
-
-      const validUsername = validateUsername(username)
-      const validPassword = validatePassword(password)
-      const validEmail =  validateEmail(email)
+         const validUsername = username && validateUsername(username)
+      const validPassword = password && validatePassword(password)
+      const validEmail = email && validateEmail(email)
 
       if (validUsername && validPassword && validEmail) {
         res.send({userId: '1', message: "Valid User"})
@@ -25,5 +24,3 @@ function createApp(validateUsername, validatePassword, validateEmail) {
 
     return app
 }
-
-module.exports = createApp;
