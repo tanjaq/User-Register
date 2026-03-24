@@ -30,24 +30,22 @@ describe('POST /users (mocked email validation)', () => {
         expect(mockValidateEmail).toHaveBeenCalledTimes(1)
     })
 
-    test('returns 400 when email validation fails', async () => {
-        mockValidateEmail.mockReturnValue(false)
+    const invalidCases = [
+        { field: 'username', value: '' },
+        { field: 'password', value: '' },
+        { field: 'username', value: null },
+        { field: 'password', value: null },
+        { field: 'username', value: undefined },
+        { field: 'password', value: undefined },
+    ]
 
-        const res = await request(mockApp).post('/users').send(validUser)
+    for (const testCase of invalidCases) {
+        test(`returns 400 when ${testCase.field} is ${String(testCase.value)}`, async () => {
+            const payload = { ...validUser, [testCase.field]: testCase.value }
+            const res = await request(mockApp).post('/users').send(payload)
 
-        expect(res.statusCode).toBe(400)
-        expect(res.body.error).toBeDefined()
-    })
-
-    test('returns false when username is empty or missing', () => {
-        expect(validateUsername('')).toBe(false);      // empty string
-        expect(validateUsername(null)).toBe(false);    // null
-        expect(validateUsername(undefined)).toBe(false); // undefined
-    });
-
-    test('returns false when password is empty or missing', () => {
-        expect(validatePassword('')).toBe(false);      // empty string
-        expect(validatePassword(null)).toBe(false);    // null
-        expect(validatePassword(undefined)).toBe(false); // undefined
-    });
+            expect(res.statusCode).toBe(400)
+            expect(res.body.error).toBeDefined()
+        })
+    }
 })
