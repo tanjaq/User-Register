@@ -2,11 +2,9 @@ const createApp = require('./app')
 const request = require('supertest')
 const validateUsername = require('./validation/validateUsername')
 const validatePassword = require('./validation/validatePassword')
-const validateEmail = require('./validation/validateEmail')
 
 const mockValidateEmail = jest.fn()
 
-const app = createApp(validateUsername, validatePassword, validateEmail)
 const mockApp = createApp(validateUsername, validatePassword, mockValidateEmail)
 
 describe('POST /users (mocked email validation)', () => {
