@@ -33,3 +33,9 @@ test('return false for password with special characters', () => {
 test('return false for password with special characters and underscore', () => {
   expect(validatePassword('asdq_QW$%^12')).toBe(false);
 });
+
+test('returns false when username is empty or missing', () => {
+  expect(validatePassword('')).toBe(false);      // empty string
+  expect(validatePassword(null)).toBe(false);    // null
+  expect(validatePassword(undefined)).toBe(false); // undefined
+});

@@ -38,4 +38,16 @@ describe('POST /users (mocked email validation)', () => {
         expect(res.statusCode).toBe(400)
         expect(res.body.error).toBeDefined()
     })
+
+    test('returns false when username is empty or missing', () => {
+        expect(validateUsername('')).toBe(false);      // empty string
+        expect(validateUsername(null)).toBe(false);    // null
+        expect(validateUsername(undefined)).toBe(false); // undefined
+    });
+
+    test('returns false when password is empty or missing', () => {
+        expect(validatePassword('')).toBe(false);      // empty string
+        expect(validatePassword(null)).toBe(false);    // null
+        expect(validatePassword(undefined)).toBe(false); // undefined
+    });
 })
