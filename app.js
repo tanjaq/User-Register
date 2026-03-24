@@ -11,7 +11,8 @@ function createApp(validateUsername, validatePassword, validateEmail) {
 
     app.post('/users', async(req, res) => {
       const { username, password, email } = req.body
-         const validUsername = username && validateUsername(username)
+
+      const validUsername = username && validateUsername(username)
       const validPassword = password && validatePassword(password)
       const validEmail = email && validateEmail(email)
 
@@ -24,3 +25,5 @@ function createApp(validateUsername, validatePassword, validateEmail) {
 
     return app
 }
+
+module.exports = createApp;
