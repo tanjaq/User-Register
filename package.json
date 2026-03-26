@@ -10,7 +10,30 @@
     "supertest": "^6.3.3"
   },
   "scripts": {
-    "test": "jest --coverage"
+    "test": "jest --coverage --verbose --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --collectCoverageFrom='*.js' --collectCoverageFrom='validation/*.js'",
+    "test:timing": "jest --verbose --bail --forceExit"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverage": true,
+    "collectCoverageFrom": [
+      "app.js",
+      "validation/**/*.js"
+    ],
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/test/"
+    ],
+    "coverageReporters": [
+      "text",
+      "text-summary",
+      "html",
+      "json"
+    ],
+    "testTimeout": 15000,
+    "detectOpenHandles": false
   },
   "keywords": [],
   "author": "",
