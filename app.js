@@ -6,15 +6,19 @@ function createApp(validateUsername, validatePassword, validateEmail) {
 
     app.use(express.json())
     app.use(cors())
-
     app.use(express.static(__dirname + '/public'));
 
     app.post('/users', async(req, res) => {
       const { username, password, email } = req.body
 
+      // Lisa kontroll, et väljad on olemas
+      if (!username || !password || !email) {
+        return res.status(400).send({error: "Missing required fields"})
+      }
+
       const validUsername = validateUsername(username)
       const validPassword = validatePassword(password)
-      const validEmail =  validateEmail(email)
+      const validEmail = validateEmail(email)
 
       if (validUsername && validPassword && validEmail) {
         res.send({userId: '1', message: "Valid User"})
