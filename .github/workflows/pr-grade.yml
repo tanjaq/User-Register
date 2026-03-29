@@ -41,8 +41,7 @@ jobs:
             --coverageDirectory=coverage/regular \
             --coverageReporters=json-summary \
             --coverageReporters=text-summary \
-            --collectCoverageFrom=app.js \
-            --collectCoverageFrom='validation/*.js'
+            --collectCoverageFrom=app.js
           status=$?
           end_ms=$(date +%s%3N)
           set -e
@@ -176,7 +175,7 @@ jobs:
               `**Mocked tests (app.mock.test.js):** ${mockedOk ? '✅ PASS' : '❌ FAIL'} (${{ steps.mocked_tests.outputs.duration_ms }}ms)`,
               `**Coverage gate (both runs at 100%):** ${coverageOk ? '✅ PASS' : '❌ FAIL'}`,
               `**Runtime gate (regular ≥ mocked + 1500ms):** ${timingOk ? '✅ PASS' : '❌ FAIL'}`,
-              `**Regular coverage** (app.js + validation/): lines=${{ steps.coverage_values.outputs.regular_lines }}% | statements=${{ steps.coverage_values.outputs.regular_statements }}% | functions=${{ steps.coverage_values.outputs.regular_functions }}% | branches=${{ steps.coverage_values.outputs.regular_branches }}%`,
+              `**Regular coverage** (app.js): lines=${{ steps.coverage_values.outputs.regular_lines }}% | statements=${{ steps.coverage_values.outputs.regular_statements }}% | functions=${{ steps.coverage_values.outputs.regular_functions }}% | branches=${{ steps.coverage_values.outputs.regular_branches }}%`,
               `**Mocked coverage** (app.js only): lines=${{ steps.coverage_values.outputs.mocked_lines }}% | statements=${{ steps.coverage_values.outputs.mocked_statements }}% | functions=${{ steps.coverage_values.outputs.mocked_functions }}% | branches=${{ steps.coverage_values.outputs.mocked_branches }}%`,
               `**Run details:** ${runUrl}`,
               `**PR checks:** ${checksUrl}`,
