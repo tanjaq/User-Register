@@ -1,12 +1,12 @@
 const request = require('supertest')
 const createApp = require('./app')
-const {
-    validateUsername,
-    validatePassword,
-    validateEmail
-} = require('./validators')
 
-// 🔥 artificial delay
+// ✅ FIXED IMPORTS (this was your main bug)
+const validateUsername = require('./validation/validateUsername')
+const validatePassword = require('./validation/validatePassword')
+const validateEmail = require('./validation/validateEmail')
+
+// 🔥 delay to simulate slow system
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const testRunStart = Date.now()
@@ -25,7 +25,7 @@ const validPayload = {
 describe('POST /users validation flow (REAL)', () => {
 
     test('returns 200 with user details when validators approve', async () => {
-        await delay(2000) // 🔥 makes this test slow
+        await delay(2000)
 
         const app = createApp(
             validateUsername,
