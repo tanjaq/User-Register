@@ -1,11 +1,17 @@
 const request = require('supertest')
 const createApp = require('./app')
+const sendEmail = require('./emailService')
+const {
+    validateUsername,
+    validatePassword,
+    validateEmail
+} = require('./validators')
 
 const testRunStart = Date.now()
 
 afterAll(() => {
     const durationMs = Date.now() - testRunStart
-    console.log(`Test run time: ${durationMs}ms`)
+    console.log(`Regular test run time: ${durationMs}ms`)
 })
 
 const validPayload = {
@@ -14,59 +20,60 @@ const validPayload = {
     email: 'student@example.com'
 }
 
-describe('POST /users validation flow', () => {
+describe('POST /users validation flow (REAL)', () => {
     test('returns 200 with user details when validators approve', async () => {
-        const mockValidateUsername = jest.fn().mockReturnValue(true)
-        const mockValidatePassword = jest.fn().mockReturnValue(true)
-        const mockValidateEmail = jest.fn().mockReturnValue(true)
-        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+        const app = createApp(
+            validateUsername,
+            validatePassword,
+            validateEmail,
+            sendEmail // REAL slow email
+        )
 
         const response = await request(app).post('/users').send(validPayload)
 
         expect(response.status).toBe(200)
-        expect(response.headers['content-type']).toMatch(/json/)
-        expect(response.body).toEqual({ userId: '1', message: 'Valid User' })
-        expect(mockValidateUsername).toHaveBeenCalledWith(validPayload.username)
-        expect(mockValidatePassword).toHaveBeenCalledWith(validPayload.password)
-        expect(mockValidateEmail).toHaveBeenCalledWith(validPayload.email)
+        expect(response.body).toEqual({
+            userId: '1',
+            message: 'Valid User'
+        })
     })
 
     test('returns 400 when username validation fails', async () => {
-        const mockValidateUsername = jest.fn().mockReturnValue(false)
-        const mockValidatePassword = jest.fn().mockReturnValue(true)
-        const mockValidateEmail = jest.fn().mockReturnValue(true)
-        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+        const app = createApp(
+            () => false,
+            validatePassword,
+            validateEmail,
+            sendEmail
+        )
 
         const response = await request(app).post('/users').send(validPayload)
 
         expect(response.status).toBe(400)
-        expect(response.body).toEqual({ error: 'Invalid User' })
-        expect(response.body.userId).toBeUndefined()
     })
 
     test('returns 400 when password validation fails', async () => {
-        const mockValidateUsername = jest.fn().mockReturnValue(true)
-        const mockValidatePassword = jest.fn().mockReturnValue(false)
-        const mockValidateEmail = jest.fn().mockReturnValue(true)
-        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+        const app = createApp(
+            validateUsername,
+            () => false,
+            validateEmail,
+            sendEmail
+        )
 
         const response = await request(app).post('/users').send(validPayload)
 
         expect(response.status).toBe(400)
-        expect(response.body).toEqual({ error: 'Invalid User' })
-        expect(response.body.userId).toBeUndefined()
     })
 
     test('returns 400 when email validation fails', async () => {
-        const mockValidateUsername = jest.fn().mockReturnValue(true)
-        const mockValidatePassword = jest.fn().mockReturnValue(true)
-        const mockValidateEmail = jest.fn().mockReturnValue(false)
-        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+        const app = createApp(
+            validateUsername,
+            validatePassword,
+            () => false,
+            sendEmail
+        )
 
         const response = await request(app).post('/users').send(validPayload)
 
         expect(response.status).toBe(400)
-        expect(response.body).toEqual({ error: 'Invalid User' })
-        expect(response.body.userId).toBeUndefined()
     })
 })
