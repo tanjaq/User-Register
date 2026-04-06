@@ -1,11 +1,13 @@
 const request = require('supertest')
 const createApp = require('./app')
-const sendEmail = require('./emailService')
 const {
     validateUsername,
     validatePassword,
     validateEmail
 } = require('./validators')
+
+// 🔥 artificial delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 const testRunStart = Date.now()
 
@@ -21,12 +23,14 @@ const validPayload = {
 }
 
 describe('POST /users validation flow (REAL)', () => {
+
     test('returns 200 with user details when validators approve', async () => {
+        await delay(2000) // 🔥 makes this test slow
+
         const app = createApp(
             validateUsername,
             validatePassword,
-            validateEmail,
-            sendEmail // REAL slow email
+            validateEmail
         )
 
         const response = await request(app).post('/users').send(validPayload)
@@ -39,11 +43,12 @@ describe('POST /users validation flow (REAL)', () => {
     })
 
     test('returns 400 when username validation fails', async () => {
+        await delay(2000)
+
         const app = createApp(
             () => false,
             validatePassword,
-            validateEmail,
-            sendEmail
+            validateEmail
         )
 
         const response = await request(app).post('/users').send(validPayload)
@@ -52,11 +57,12 @@ describe('POST /users validation flow (REAL)', () => {
     })
 
     test('returns 400 when password validation fails', async () => {
+        await delay(2000)
+
         const app = createApp(
             validateUsername,
             () => false,
-            validateEmail,
-            sendEmail
+            validateEmail
         )
 
         const response = await request(app).post('/users').send(validPayload)
@@ -65,11 +71,12 @@ describe('POST /users validation flow (REAL)', () => {
     })
 
     test('returns 400 when email validation fails', async () => {
+        await delay(2000)
+
         const app = createApp(
             validateUsername,
             validatePassword,
-            () => false,
-            sendEmail
+            () => false
         )
 
         const response = await request(app).post('/users').send(validPayload)
