@@ -1,49 +1,175 @@
-const createApp = require('./app')
-const request = require('supertest')
-const validateUsername = require('./validation/validateUsername')
-const validatePassword = require('./validation/validatePassword')
-const validateEmail = require('./validation/validateEmail')
+const request = require('supertest');
+const initApp = require('./app');
+const checkUser = require('./validation/validateUsername');
+const checkPass = require('./validation/validatePassword');
+const checkMail = require('./validation/validateEmail');
 
-const app = createApp(validateUsername, validatePassword, validateEmail)
+const server = initApp(checkUser, checkPass, checkMail);
 
-describe('given correct username and password', () => {
-    test('return status 200', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
+describe('Negatiivsed testid: vigased või puudulikud andmed', () => {
+    
+    test('kasutajanimi puudub', async () => {
+        const res = await request(server).post('/users').send({
+            username: '',
+            password: 'Password1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('parool puudub', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: '',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('valesti vormistatud e-mail (domeen puudu)', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'Password1',
+            email: 'student@example'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('e-mail ilma @ märgita', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'Password1',
+            email: 'studentexample.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('parool sisaldab keelatud erimärke', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'Password1!',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('paroolis puuduvad väikesed tähed', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'PASSWORD1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('paroolis puuduvad suured tähed', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'password1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('liiga lühike parool', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'ValidUsername',
+            password: 'Pass1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('kasutajanimes on keelatud sümbolid', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Invalid@Name',
+            password: 'Password1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('liiga lühike kasutajanimi', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'abc',
+            password: 'Password1',
+            email: 'student@example.com'
+        });
+        expect(res.body.error).toBe('Invalid User');
+    });
+
+    test('vastus ei tohi sisaldada userId-d vea korral', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'er',
             password: 'Password123',
             email: 'student@example.com'
-        })
-        expect(response.statusCode).toBe(200)
-    })
+        });
+        expect(res.body.userId).toBeUndefined();
+    });
 
-    test('returns userId', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
+    test('veateade peab olema "Invalid User"', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'er',
             password: 'Password123',
             email: 'student@example.com'
-        })
-        expect(response.body.userId).toBeDefined();
-    })
+        });
+        expect(res.body).toEqual({ error: "Invalid User" });
+    });
 
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
-})
-
-describe('given incorrect or missing username and password', () => {
-    test('return status 400', async () => {
-        const response = await request(app).post('/users').send({
+    test('peaks tagastama staatusekoodi 400', async () => {
+        const res = await request(server).post('/users').send({
             username: 'user',
             password: 'password',
             email: 'not-an-email'
-        })
-        expect(response.statusCode).toBe(400)
-    })
+        });
+        expect(res.statusCode).toBe(400);
+    });
+});
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
-})
+describe('Positiivsed testid: korrektsed andmed', () => {
+
+    test('vastuse body peab sisaldama korrektset userId-d ja sõnumit', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        });
+        expect(res.body.userId).toBe("1");
+    });
+
+    test('eduka päringu vastus peab olema JSON vormingus', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        });
+        expect(res.headers['content-type']).toMatch(/json/);
+    });
+
+    test('kasutaja ID peab olema defineeritud', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        });
+        expect(res.body.userId).toBeDefined();
+    });
+
+    test('objekt peab vastama oodatud kujule', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        });
+        expect(res.body).toEqual({ userId: "1", message: "Valid User" });
+    });
+
+    test('tagastab staatuse 200', async () => {
+        const res = await request(server).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        });
+        expect(res.statusCode).toBe(200);
+    });
+});
