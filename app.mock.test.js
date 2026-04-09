@@ -14,6 +14,7 @@ jest.mock('./validation/validateEmail', () => {
 })
 
 const validateEmail = require('./validation/validateEmail')
+
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
 describe('given correct username and password', () => {
@@ -32,13 +33,35 @@ describe('given correct username and password', () => {
             password: 'Password123',
             email: 'student@example.com'
         })
-        expect(response.body.userId).toBeDefined();
+        expect(response.body.userId).toBeDefined()
     })
 
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
+    test('response content type is JSON', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.headers['content-type']).toMatch(/json/)
+    })
+
+    test('returns correct message', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.body.message).toBe('Valid User')
+    })
+
+    test('userId is "1"', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.body.userId).toBe('1')
+    })
 })
 
 describe('given incorrect or missing username and password', () => {
@@ -51,9 +74,48 @@ describe('given incorrect or missing username and password', () => {
         expect(response.statusCode).toBe(400)
     })
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
+    test('returns error message', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'user',
+            password: 'password',
+            email: 'not-an-email'
+        })
+        expect(response.body.error).toBe('Invalid User')
+    })
+
+    test('does not return userId', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'user',
+            password: 'password',
+            email: 'not-an-email'
+        })
+        expect(response.body.userId).toBeUndefined()
+    })
+
+    test('missing username returns 400', async () => {
+        const response = await request(app).post('/users').send({
+            username: '',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('missing password returns 400', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: '',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('missing email returns 400', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: ''
+        })
+        expect(response.statusCode).toBe(400)
+    })
 })
