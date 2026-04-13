@@ -37,12 +37,12 @@ index 79b9449..935c9c0 100644
  const validateEmail = require('./validation/validateEmail')
 +
  const app = createApp(validateUsername, validatePassword, validateEmail)
- 
+
  describe('given correct username and password', () => {
 @@ -35,10 +27,16 @@ describe('given correct username and password', () => {
          expect(response.body.userId).toBeDefined();
      })
- 
+
 -    // test response content type?
 -    // test response message
 -    // test response user id value
@@ -58,7 +58,7 @@ index 79b9449..935c9c0 100644
 +        expect(response.headers['content-type']).toMatch(/application\/json/)
 +    })
  })
- 
+
  describe('given incorrect or missing username and password', () => {
 @@ -50,10 +48,50 @@ describe('given incorrect or missing username and password', () => {
          })
@@ -109,7 +109,7 @@ index 79b9449..935c9c0 100644
 +        expect(response.statusCode).toBe(400)
 +        expect(response.body.userId).toBeUndefined()
 +    })
- 
+
 -    // test response message
 -    // test that response does NOT have userId
 -    // test incorrect username or password according to requirements
@@ -144,7 +144,7 @@ index 0000000..004013d
 +  const out = `duration_ms:${durationMs}\nduration_s:${durationSec}\nexit_code:${code}\n`
 +  try {
 +    fs.writeFileSync(outFile, out)
-+    console.log(`\nTest runtime written to ${outFile} (${durationSec}s)`) 
++    console.log(`\nTest runtime written to ${outFile} (${durationSec}s)`)
 +  } catch (e) {
 +    console.error('Failed to write', outFile, e)
 +  }
@@ -159,6 +159,6 @@ index 0000000..70a42c2
 +duration_ms:6801
 +duration_s:6.80
 +exit_code:0
--- 
+--
 2.53.0.windows.2
 
