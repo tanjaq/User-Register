@@ -1,0 +1,102 @@
+diff a/app.mock.test.js b/app.mock.test.js	(rejected hunks)
+@@ -1,19 +1,11 @@
++jest.mock('./validation/validateEmail', () => jest.fn(() => true))
++
+ const createApp = require('./app')
+ const request = require('supertest')
+ const validateUsername = require('./validation/validateUsername')
+ const validatePassword = require('./validation/validatePassword')
+-
+-//Mock validateEmail to isolate tests
+-jest.mock('./validation/validateEmail', () => {
+-    return jest.fn((email) => {
+-        //Simulate real world simulation
+-        if (!email || typeof email !== 'string') return false;
+-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+-        return re.test(email);
+-    })
+-})
+-
+ const validateEmail = require('./validation/validateEmail')
++
+ const app = createApp(validateUsername, validatePassword, validateEmail)
+ 
+ describe('given correct username and password', () => {
+@@ -35,10 +27,16 @@ describe('given correct username and password', () => {
+         expect(response.body.userId).toBeDefined();
+     })
+ 
+-    // test response content type?
+-    // test response message
+-    // test response user id value
+-    // ...
++    test('returns correct message, userId value and content-type', async () => {
++        const response = await request(app).post('/users').send({
++            username: 'Username',
++            password: 'Password123',
++            email: 'student@example.com'
++        })
++        expect(response.body.userId).toBe('1')
++        expect(response.body.message).toBe('Valid User')
++        expect(response.headers['content-type']).toMatch(/application\/json/)
++    })
+ })
+ 
+ describe('given incorrect or missing username and password', () => {
+@@ -50,10 +48,50 @@ describe('given incorrect or missing username and password', () => {
+         })
+         expect(response.statusCode).toBe(400)
+     })
++    test('returns error message and does not include userId', async () => {
++        const response = await request(app).post('/users').send({
++            username: 'user',
++            password: 'password',
++            email: 'not-an-email'
++        })
++        expect(response.body.error).toBe('Invalid User')
++        expect(response.body.userId).toBeUndefined()
++        expect(response.headers['content-type']).toMatch(/application\/json/)
++    })
++})
++
++describe('edge cases and performance-friendly tests', () => {
++    test('missing username returns 400 and no userId', async () => {
++        const validateUsernameMock = (u) => !!u && u.length >= 6
++        const validatePasswordMock = (p) => !!p && p.length >= 8
++        const validateEmailMock = require('./validation/validateEmail')
++
++        const appFast = createApp(validateUsernameMock, validatePasswordMock, validateEmailMock)
++
++        const response = await request(appFast).post('/users').send({
++            password: 'Password123',
++            email: 'student@example.com'
++        })
++
++        expect(response.statusCode).toBe(400)
++        expect(response.body.userId).toBeUndefined()
++        expect(validateEmailMock).toHaveBeenCalled()
++    })
++
++    test('missing password returns 400 and no userId', async () => {
++        const validateUsernameMock = (u) => !!u && u.length >= 6
++        const validatePasswordMock = jest.fn().mockReturnValue(false)
++        const validateEmailMock = require('./validation/validateEmail')
++
++        const appFast = createApp(validateUsernameMock, validatePasswordMock, validateEmailMock)
++
++        const response = await request(appFast).post('/users').send({
++            username: 'Username',
++            email: 'student@example.com'
++        })
++
++        expect(response.statusCode).toBe(400)
++        expect(response.body.userId).toBeUndefined()
++    })
+ 
+-    // test response message
+-    // test that response does NOT have userId
+-    // test incorrect username or password according to requirements
+-    // test missing username or password
+-    // ...
+ })
+\ No newline at end of file
