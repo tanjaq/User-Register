@@ -16,19 +16,17 @@ describe('given correct username and password', () => {
         expect(response.statusCode).toBe(200)
     })
 
-    test('returns userId', async () => {
+    test('returns json with userId "1" and message "Valid User"', async () => {
         const response = await request(app).post('/users').send({
             username: 'Username',
             password: 'Password123',
             email: 'student@example.com'
         })
+        expect(response.headers['content-type']).toMatch(/json/)
         expect(response.body.userId).toBeDefined();
+        expect(response.body.userId).toBe('1')
+        expect(response.body.message).toBe('Valid User')
     })
-
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
 })
 
 describe('given incorrect or missing username and password', () => {
@@ -41,9 +39,58 @@ describe('given incorrect or missing username and password', () => {
         expect(response.statusCode).toBe(400)
     })
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
+    test('returns error message "Invalid User" and no userId', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'user',
+            password: 'password',
+            email: 'not-an-email'
+        })
+        expect(response.body.error).toBe('Invalid User')
+        expect(response.body.userId).toBeUndefined()
+    })
+
+    test('returns 400 for username shorter than 6 characters', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'usr',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns 400 for username with invalid characters', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'User@Name!',
+            password: 'Password123',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns 400 for password without uppercase letter', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'password123',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns 400 for password without a number', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'PasswordABC',
+            email: 'student@example.com'
+        })
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns 400 for invalid email format', async () => {
+        const response = await request(app).post('/users').send({
+            username: 'Username',
+            password: 'Password123',
+            email: 'not-an-email'
+        })
+        expect(response.statusCode).toBe(400)
+    })
 })
