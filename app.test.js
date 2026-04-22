@@ -1,49 +1,72 @@
-const createApp = require('./app')
 const request = require('supertest')
-const validateUsername = require('./validation/validateUsername')
-const validatePassword = require('./validation/validatePassword')
-const validateEmail = require('./validation/validateEmail')
+const createApp = require('./app')
 
-const app = createApp(validateUsername, validatePassword, validateEmail)
+const testRunStart = Date.now()
 
-describe('given correct username and password', () => {
-    test('return status 200', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
-        })
-        expect(response.statusCode).toBe(200)
-    })
-
-    test('returns userId', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
-        })
-        expect(response.body.userId).toBeDefined();
-    })
-
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
+afterAll(() => {
+    const durationMs = Date.now() - testRunStart
+    console.log(`Test run time: ${durationMs}ms`)
 })
 
-describe('given incorrect or missing username and password', () => {
-    test('return status 400', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'user',
-            password: 'password',
-            email: 'not-an-email'
-        })
-        expect(response.statusCode).toBe(400)
+const validPayload = {
+    username: 'User.name1',
+    password: 'Password123',
+    email: 'student@example.com'
+}
+
+describe('POST /users validation flow', () => {
+    test('returns 200 with user details when validators approve', async () => {
+        const mockValidateUsername = jest.fn().mockReturnValue(true)
+        const mockValidatePassword = jest.fn().mockReturnValue(true)
+        const mockValidateEmail = jest.fn().mockReturnValue(true)
+        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+
+        const response = await request(app).post('/users').send(validPayload)
+
+        expect(response.status).toBe(200)
+        expect(response.headers['content-type']).toMatch(/json/)
+        expect(response.body).toEqual({ userId: '1', message: 'Valid User' })
+        expect(mockValidateUsername).toHaveBeenCalledWith(validPayload.username)
+        expect(mockValidatePassword).toHaveBeenCalledWith(validPayload.password)
+        expect(mockValidateEmail).toHaveBeenCalledWith(validPayload.email)
     })
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
+    test('returns 400 when username validation fails', async () => {
+        const mockValidateUsername = jest.fn().mockReturnValue(false)
+        const mockValidatePassword = jest.fn().mockReturnValue(true)
+        const mockValidateEmail = jest.fn().mockReturnValue(true)
+        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+
+        const response = await request(app).post('/users').send(validPayload)
+
+        expect(response.status).toBe(400)
+        expect(response.body).toEqual({ error: 'Invalid User' })
+        expect(response.body.userId).toBeUndefined()
+    })
+
+    test('returns 400 when password validation fails', async () => {
+        const mockValidateUsername = jest.fn().mockReturnValue(true)
+        const mockValidatePassword = jest.fn().mockReturnValue(false)
+        const mockValidateEmail = jest.fn().mockReturnValue(true)
+        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+
+        const response = await request(app).post('/users').send(validPayload)
+
+        expect(response.status).toBe(400)
+        expect(response.body).toEqual({ error: 'Invalid User' })
+        expect(response.body.userId).toBeUndefined()
+    })
+
+    test('returns 400 when email validation fails', async () => {
+        const mockValidateUsername = jest.fn().mockReturnValue(true)
+        const mockValidatePassword = jest.fn().mockReturnValue(true)
+        const mockValidateEmail = jest.fn().mockReturnValue(false)
+        const app = createApp(mockValidateUsername, mockValidatePassword, mockValidateEmail)
+
+        const response = await request(app).post('/users').send(validPayload)
+
+        expect(response.status).toBe(400)
+        expect(response.body).toEqual({ error: 'Invalid User' })
+        expect(response.body.userId).toBeUndefined()
+    })
 })
