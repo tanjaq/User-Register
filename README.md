@@ -72,7 +72,7 @@ Note: `validateEmail` has an intentional ~2 second busy wait per request, so int
 - Test Suites: `1 passed, 1 total`
 - Tests: `6 passed, 6 total`
 - Coverage (All files): `100% statements`, `100% branches`, `100% functions`, `100% lines`
-- Runtime: `1.968s`
+- Runtime: `1.704s`
 
 ### Runtime Comparison
 
