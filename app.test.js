@@ -6,44 +6,66 @@ const validateEmail = require('./validation/validateEmail')
 
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
-describe('given correct username and password', () => {
-    test('return status 200', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
-        })
+const validPayload = {
+    username: 'User.Name99',
+    password: 'Password123',
+    email: 'student@example.com'
+}
+
+describe('POST /users', () => {
+    test('returns success response for valid user', async () => {
+        const response = await request(app).post('/users').send(validPayload)
+
         expect(response.statusCode).toBe(200)
+        expect(response.body).toEqual({ userId: '1', message: 'Valid User' })
     })
 
-    test('returns userId', async () => {
+    test('returns status 400 when username is shorter than 6 characters', async () => {
         const response = await request(app).post('/users').send({
-            username: 'Username',
-            password: 'Password123',
-            email: 'student@example.com'
+            ...validPayload,
+            username: 'user1'
         })
-        expect(response.body.userId).toBeDefined();
+
+        expect(response.statusCode).toBe(400)
+        expect(response.body).toEqual({ error: 'Invalid User' })
     })
 
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
-})
+    test('returns status 400 when username contains disallowed characters', async () => {
+        const response = await request(app).post('/users').send({
+            ...validPayload,
+            username: 'User_name'
+        })
 
-describe('given incorrect or missing username and password', () => {
-    test('return status 400', async () => {
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns status 400 when password does not meet complexity rules', async () => {
+        const response = await request(app).post('/users').send({
+            ...validPayload,
+            password: 'password'
+        })
+
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns status 400 when email has no at-symbol', async () => {
+        const response = await request(app).post('/users').send({
+            ...validPayload,
+            email: 'student.example.com'
+        })
+
+        expect(response.statusCode).toBe(400)
+    })
+
+    test('returns only error payload for invalid user', async () => {
         const response = await request(app).post('/users').send({
             username: 'user',
             password: 'password',
             email: 'not-an-email'
         })
-        expect(response.statusCode).toBe(400)
-    })
 
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
+        expect(response.statusCode).toBe(400)
+        expect(response.body).toEqual({ error: 'Invalid User' })
+        expect(response.body.userId).toBeUndefined()
+    })
 })
