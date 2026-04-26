@@ -55,3 +55,26 @@ Jest documentation:
    * Lisa coverage info
    * Lisa testide jooksuaja info
    * Võrdle jooksumisaega (Ülesanne 1 vs Ülesanne 2)
+
+## Test Results
+
+### Ülesanne 1: API testid (`app.test.js`)
+
+- Test Suites: `1 passed, 1 total`
+- Tests: `6 passed, 6 total`
+- Coverage (All files): `100% statements`, `100% branches`, `100% functions`, `100% lines`
+- Runtime: approximately `12s+`
+
+Note: `validateEmail` has an intentional ~2 second busy wait per request, so integration tests without mocking are significantly slower.
+
+### Ülesanne 2: Mocked API testid (`app.mock.test.js`)
+
+- Test Suites: `1 passed, 1 total`
+- Tests: `6 passed, 6 total`
+- Coverage (All files): `100% statements`, `100% branches`, `100% functions`, `100% lines`
+- Runtime: `1.704s`
+
+### Runtime Comparison
+
+- Non-mocked API tests are much slower because real email validation blocks ~2 seconds on every request.
+- Mocked API tests remove that delay and run about `6x` faster in this project setup.
