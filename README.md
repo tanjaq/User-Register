@@ -1,3 +1,15 @@
+## Ülesanne 1: API testid tuelmused
+Test Suites: 5 passed, 5 total
+Tests:       37 passed, 37 total
+Snapshots:   0 total
+Time:        29.56 s
+
+## Ülesanne 2: Mocked API testid
+Test Suites: 1 passed, 1 total
+Tests:       12 passed, 12 total
+Snapshots:   0 total
+Time:        0.877 s
+
 # Integration testing - user registration system
 The task is to add tests to registration functionality.
 
