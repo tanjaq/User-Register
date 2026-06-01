@@ -47,6 +47,34 @@ Jest documentation:
    * Lisa coverage info
    * Lisa testide jooksuaja info
 
+   $ npm test
+
+> tests@1.0.0 test
+> jest --coverage
+
+ PASS  validation/validateUsername.test.js
+ PASS  validation/validatePassword.test.js
+ PASS  ./app.mock.test.js
+ PASS  validation/validateEmail.test.js (11.057 s)
+ PASS  ./app.test.js (27.558 s)
+---------------|---------|----------|---------|---------|-------------------
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------|---------|----------|---------|---------|-------------------
+All files      |     100 |      100 |     100 |     100 |
+ User-Register |     100 |      100 |     100 |     100 |
+  app.js       |     100 |      100 |     100 |     100 |
+ ...validation |     100 |      100 |     100 |     100 |
+  ...eEmail.js |     100 |      100 |     100 |     100 |
+  ...ssword.js |     100 |      100 |     100 |     100 |
+  ...ername.js |     100 |      100 |     100 |     100 |
+---------------|---------|----------|---------|---------|-------------------
+
+Test Suites: 5 passed, 5 total
+Tests:       48 passed, 48 total
+Snapshots:   0 total
+Time:        27.944 s
+Ran all test suites.
+
 ## Ülesanne 2: Mocked API testid
 * Mocki emaili validatsioon kasutades `jest.mock()`
 * Kirjuta samad testid `app.mock.test.js` faili
@@ -55,3 +83,44 @@ Jest documentation:
    * Lisa coverage info
    * Lisa testide jooksuaja info
    * Võrdle jooksumisaega (Ülesanne 1 vs Ülesanne 2)
+
+   $ npm test -- app.mock.test.js
+
+> tests@1.0.0 test
+> jest --coverage app.mock.test.js
+
+ PASS  ./app.mock.test.js
+  POST /users
+    √ returns 200 and valid user payload for valid input (44 ms)
+    √ returns 400 and error payload when username is shorter than 6 characters (6 ms)
+    √ returns 400 and error payload when username contains special characters (5 ms)
+    √ returns 400 and error payload when password is shorter than 8 characters (5 ms)
+    √ returns 400 and error payload when password is missing an uppercase letter (4 ms)
+    √ returns 400 and error payload when password is missing a lowercase letter (4 ms)
+    √ returns 400 and error payload when password is missing a number (4 ms)
+    √ returns 400 and error payload when password contains special characters (3 ms)
+    √ returns 400 and error payload when email is missing @ (5 ms)
+    √ returns 400 and error payload when email is missing a valid domain extension (5 ms)
+    √ returns 400 and error payload when username is missing (3 ms)
+    √ returns 400 and error payload when password is missing (3 ms)
+    √ returns 400 and error payload when email is missing (3 ms)
+
+---------------|---------|----------|---------|---------|-------------------
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s
+---------------|---------|----------|---------|---------|-------------------
+All files      |     100 |      100 |     100 |     100 |
+ User-Register |     100 |      100 |     100 |     100 |
+  app.js       |     100 |      100 |     100 |     100 |
+ ...validation |     100 |      100 |     100 |     100 |
+  ...eEmail.js |     100 |      100 |     100 |     100 |
+  ...ssword.js |     100 |      100 |     100 |     100 |
+  ...ername.js |     100 |      100 |     100 |     100 |
+---------------|---------|----------|---------|---------|-------------------
+Test Suites: 1 passed, 1 total
+Tests:       13 passed, 13 total
+Snapshots:   0 total
+Time:        0.807 s, estimated 2 s
+Ran all test suites matching /app.mock.test.js/i.
+
+
+1 yl oli umbes 28 sek, 2 yl aga alla 1 sekundi

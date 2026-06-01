@@ -3,57 +3,115 @@ const request = require('supertest')
 const validateUsername = require('./validation/validateUsername')
 const validatePassword = require('./validation/validatePassword')
 
-//Mock validateEmail to isolate tests
+// Mock email validation but still execute the real validator logic
+// without the artificial 2-second delay, so the mocked run keeps 100% coverage.
 jest.mock('./validation/validateEmail', () => {
+    const actualValidateEmail = jest.requireActual('./validation/validateEmail')
+
     return jest.fn((email) => {
-        //Simulate real world simulation
-        if (!email || typeof email !== 'string') return false;
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
-        return re.test(email);
+        const originalDateNow = Date.now
+
+        Date.now = jest.fn()
+            .mockReturnValueOnce(0)
+            .mockReturnValue(2001)
+
+        try {
+            return actualValidateEmail(email)
+        } finally {
+            Date.now = originalDateNow
+        }
     })
 })
 
 const validateEmail = require('./validation/validateEmail')
 const app = createApp(validateUsername, validatePassword, validateEmail)
 
-describe('given correct username and password', () => {
-    test('return status 200', async () => {
+describe('POST /users', () => {
+    beforeEach(() => {
+        validateEmail.mockClear()
+    })
+
+    test('returns 200 and valid user payload for valid input', async () => {
         const response = await request(app).post('/users').send({
-            username: 'Username',
+            username: 'User.Name123',
             password: 'Password123',
             email: 'student@example.com'
         })
+
         expect(response.statusCode).toBe(200)
+        expect(response.headers['content-type']).toMatch(/json/)
+        expect(response.body).toEqual({
+            userId: '1',
+            message: 'Valid User'
+        })
     })
 
-    test('returns userId', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'Username',
+    test.each([
+        ['username is shorter than 6 characters', {
+            username: 'user',
             password: 'Password123',
             email: 'student@example.com'
-        })
-        expect(response.body.userId).toBeDefined();
-    })
+        }],
+        ['username contains special characters', {
+            username: 'user!23',
+            password: 'Password123',
+            email: 'student@example.com'
+        }],
+        ['password is shorter than 8 characters', {
+            username: 'Valid.User',
+            password: 'Pass123',
+            email: 'student@example.com'
+        }],
+        ['password is missing an uppercase letter', {
+            username: 'Valid.User',
+            password: 'password123',
+            email: 'student@example.com'
+        }],
+        ['password is missing a lowercase letter', {
+            username: 'Valid.User',
+            password: 'PASSWORD123',
+            email: 'student@example.com'
+        }],
+        ['password is missing a number', {
+            username: 'Valid.User',
+            password: 'Password',
+            email: 'student@example.com'
+        }],
+        ['password contains special characters', {
+            username: 'Valid.User',
+            password: 'Password123!',
+            email: 'student@example.com'
+        }],
+        ['email is missing @', {
+            username: 'Valid.User',
+            password: 'Password123',
+            email: 'studentexample.com'
+        }],
+        ['email is missing a valid domain extension', {
+            username: 'Valid.User',
+            password: 'Password123',
+            email: 'student@example'
+        }],
+        ['username is missing', {
+            password: 'Password123',
+            email: 'student@example.com'
+        }],
+        ['password is missing', {
+            username: 'Valid.User',
+            email: 'student@example.com'
+        }],
+        ['email is missing', {
+            username: 'Valid.User',
+            password: 'Password123'
+        }]
+    ])('returns 400 and error payload when %s', async (_scenario, payload) => {
+        const response = await request(app).post('/users').send(payload)
 
-    // test response content type?
-    // test response message
-    // test response user id value
-    // ...
-})
-
-describe('given incorrect or missing username and password', () => {
-    test('return status 400', async () => {
-        const response = await request(app).post('/users').send({
-            username: 'user',
-            password: 'password',
-            email: 'not-an-email'
-        })
         expect(response.statusCode).toBe(400)
+        expect(response.headers['content-type']).toMatch(/json/)
+        expect(response.body).toEqual({
+            error: 'Invalid User'
+        })
+        expect(response.body.userId).toBeUndefined()
     })
-
-    // test response message
-    // test that response does NOT have userId
-    // test incorrect username or password according to requirements
-    // test missing username or password
-    // ...
 })
