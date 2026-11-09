@@ -1,0 +1,65 @@
+name: Registration tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: mkdir -p reports
+      - name: Run all original and registration tests
+        run: npm test -- --runInBand --json --outputFile=reports/all.json --collectCoverageFrom=app.js --coverageDirectory=coverage/all --coverageReporters=text --coverageReporters=json-summary --coverageReporters=html
+      - name: Run mocked API tests independently
+        run: npm test -- app.mock.test.js --runInBand --json --outputFile=reports/mocked.json --collectCoverageFrom=app.js --coverageDirectory=coverage/mocked --coverageReporters=text --coverageReporters=json-summary --coverageReporters=html
+      - name: Report measured time and coverage
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const all = require("./reports/all.json");
+          const mocked = require("./reports/mocked.json");
+          const normal = all.testResults.find(r => /[\\/]app\.test\.js$/.test(r.name));
+          const mock = mocked.testResults.find(r => /[\\/]app\.mock\.test\.js$/.test(r.name));
+          const normalMs = normal.endTime - normal.startTime;
+          const mockedMs = mock.endTime - mock.startTime;
+          const coverage = require("./coverage/all/coverage-summary.json").total;
+          const mockCoverage = require("./coverage/mocked/coverage-summary.json").total;
+          const text = "Svyatoslav Vyazovyy (Svyatoslavvyas)\n"
+            + "All tests: " + all.numPassedTests + "/" + all.numTotalTests + " passed\n"
+            + "Real API suite: " + normalMs + " ms\n"
+            + "Mocked API suite (separate run): " + mockedMs + " ms\n"
+            + "Speedup: " + (normalMs / mockedMs).toFixed(2) + "x\n"
+            + "Coverage app.js, real/all: " + JSON.stringify(coverage) + "\n"
+            + "Coverage app.js, mocked: " + JSON.stringify(mockCoverage) + "\n";
+          fs.writeFileSync("reports/RESULTS.txt", text);
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, text);
+          console.log(text);
+          NODE
+      - name: Start app and verify registration over HTTP
+        run: |
+          node server.js > /tmp/register-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/ > /tmp/register-form.html; then break; fi
+            sleep 1
+          done
+          curl -fsS http://localhost:3000/users -H 'Content-Type: application/json' --data '{"username":"Username","password":"Password123","email":"student@example.com"}' > /tmp/register-result.json
+          grep -q 'Valid User' /tmp/register-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: registration-results
+          path: |
+            reports/
+            coverage/
