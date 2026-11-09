@@ -1,7 +1,5 @@
 function validateUsername(username) {
-  const validLength = username.length >= 6 && username.length <=30;
-  const allowedcharacters = /^[a-zA-Z0-9.]+$/g.test(username);
-
-  return validLength && allowedcharacters;
+  if (typeof username !== 'string') return false;
+  return username.length >= 6 && username.length <= 30 && /^[a-zA-Z0-9.]+$/.test(username);
 }
 module.exports = validateUsername;
